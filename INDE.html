@@ -1,0 +1,1546 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RTA - ข้อสอบคณิตศาสตร์ทหาร 20 ข้อ | จุดเด่นทหารไทย</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600&amp;family=Inter:wght@400;500;600&amp;display=swap');
+        
+        body { font-family: 'Prompt', 'Inter', system-ui, sans-serif; }
+        
+        .military-bg {
+            background-color: #0a120a;
+            background-image: 
+                linear-gradient(rgba(34, 197, 94, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(34, 197, 94, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+        }
+        
+        .section-title { font-size: 1.35rem; font-weight: 700; letter-spacing: 1px; }
+        
+        .result-card { animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        @keyframes popIn { 0% { transform: scale(0.8) translateY(20px); opacity: 0; } 100% { transform: scale(1) translateY(0); opacity: 1; } }
+        
+        .snow-canvas { pointer-events: none; z-index: 1; }
+        
+        .modal { animation: fadeInScale 0.2s ease forwards; }
+        
+        .custom-scroll::-webkit-scrollbar { width: 6px; }
+        .custom-scroll::-webkit-scrollbar-thumb { background: #166534; border-radius: 3px; }
+        
+        .exam-timer {
+            font-family: 'Inter', monospace;
+            font-variant-numeric: tabular-nums;
+        }
+        
+        .leaderboard-table tr:hover { background-color: rgba(22, 101, 52, 0.15); }
+        
+        .status-pass { background-color: #166534; color: white; }
+        .status-lucky { background-color: #ca8a04; color: #1e2937; }
+        .status-fail { background-color: #9f1239; color: white; }
+        
+        .dept-badge {
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 12px currentColor, 0 0 24px currentColor;
+            animation: dept-shimmer 2.2s infinite linear;
+        }
+        .dept-badge::after {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -100%;
+            width: 50%;
+            height: 200%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.45), transparent);
+            animation: shimmer-sweep 1.8s infinite;
+        }
+        @keyframes dept-shimmer {
+            0%, 100% { filter: brightness(1); }
+            50% { filter: brightness(1.25); }
+        }
+        @keyframes shimmer-sweep {
+            0% { transform: translateX(-150%); }
+            100% { transform: translateX(400%); }
+        }
+        
+        .question-card {
+            background: linear-gradient(145deg, #111a11, #0a120a);
+            border: 2px solid #166534;
+        }
+        
+        .exam-code-badge {
+            background: linear-gradient(90deg, #ca8a04, #fbbf24);
+            color: #1e2937;
+            font-weight: 800;
+            letter-spacing: 1px;
+            box-shadow: 0 0 10px #fbbf24;
+        }
+    </style>
+</head>
+<body class="military-bg text-white min-h-screen overflow-x-hidden">
+    <!-- Snow Canvas -->
+    <canvas id="snow-canvas" class="snow-canvas fixed inset-0"></canvas>
+    
+    <!-- Navbar -->
+    <nav class="bg-black/80 border-b border-green-900 sticky top-0 z-50 backdrop-blur-md">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <div class="flex items-center gap-x-4">
+                <div class="flex items-center gap-x-3">
+                    <div class="h-14 w-14 bg-gradient-to-br from-green-600 to-emerald-700 rounded-2xl flex items-center justify-center text-4xl shadow-[0_0_20px_rgb(34,197,94)] border border-green-400">🪖</div>
+                    <div>
+                        <h1 class="text-3xl font-black tracking-tighter">RTA</h1>
+                        <p class="text-[10px] text-green-400 -mt-1 tracking-[3px]">จุดเด่นทหารไทย • ข้อสอบ 20 ข้อ</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="user-status" class="flex items-center gap-x-3">
+                <!-- Populated by JS -->
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Login / Register Gate -->
+    <div id="auth-gate" class="max-w-md mx-auto px-6 pt-12 pb-8 relative z-10">
+        <div class="bg-zinc-950 border border-green-800 rounded-3xl p-8">
+            <div class="text-center mb-8">
+                <div class="text-6xl mb-3">🪖</div>
+                <h2 class="text-4xl font-black tracking-tighter">ยินดีต้อนรับสู่ RTA</h2>
+                <p class="text-green-400 mt-2">สร้างบัญชีเพื่อเริ่มทำข้อสอบคณิตศาสตร์ทหาร 20 ข้อ</p>
+            </div>
+            
+            <div class="flex border-b border-green-900 mb-6">
+                <button onclick="showAuthTab('register')" id="tab-register"
+                        class="flex-1 py-3 font-bold border-b-2 border-green-400 text-green-300">สร้างบัญชี</button>
+                <button onclick="showAuthTab('login')" id="tab-login"
+                        class="flex-1 py-3 font-bold text-zinc-400 hover:text-white">เข้าสู่ระบบ</button>
+            </div>
+            
+            <div id="auth-register">
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-xs font-bold text-green-400 block mb-1.5">ชื่อในเกม</label>
+                        <input id="reg-name" type="text" placeholder="เช่น ทหารกล้า2026" class="w-full bg-black border border-green-800 focus:border-green-500 rounded-2xl px-5 py-3 text-white outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-green-400 block mb-1.5">รหัสผ่าน</label>
+                        <input id="reg-pass" type="password" placeholder="อย่างน้อย 4 ตัวอักษร" class="w-full bg-black border border-green-800 focus:border-green-500 rounded-2xl px-5 py-3 text-white outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-green-400 block mb-1.5">ยืนยันรหัสผ่าน</label>
+                        <input id="reg-pass2" type="password" placeholder="กรอกรหัสผ่านอีกครั้ง" class="w-full bg-black border border-green-800 focus:border-green-500 rounded-2xl px-5 py-3 text-white outline-none">
+                    </div>
+                    
+                    <!-- NEW: Exam Code input -->
+                    <div>
+                        <label class="text-xs font-bold text-yellow-400 block mb-1.5">รหัสประจำตัวข้อสอบ (ถ้ามีจากผู้ดูแล)</label>
+                        <input id="reg-exam-code" type="text" placeholder="เช่น AA01, AA02, AA05" class="w-full bg-black border border-yellow-700 focus:border-yellow-400 rounded-2xl px-5 py-3 text-white outline-none font-mono uppercase">
+                        <p class="text-[10px] text-yellow-500 mt-1">กรอกเฉพาะเมื่อผู้ดูแลให้รหัสมา (AA01 - AA08)</p>
+                    </div>
+                    
+                    <button onclick="registerUser()" class="w-full py-4 font-black text-lg bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 rounded-3xl transition-all active:scale-[0.985]">
+                        สร้างบัญชีและรับรหัสประจำตัวผู้สอบ
+                    </button>
+                    <p class="text-center text-xs text-green-500">สอบได้เพียง 1 ครั้ง • 20 ข้อ • ผ่าน 30 คะแนนขึ้นไป</p>
+                </div>
+            </div>
+            
+            <div id="auth-login" class="hidden">
+                <div class="space-y-4">
+                    <div>
+                        <label class="text-xs font-bold text-green-400 block mb-1.5">ชื่อในเกม</label>
+                        <input id="login-name" type="text" placeholder="ชื่อที่สมัครไว้" class="w-full bg-black border border-green-800 focus:border-green-500 rounded-2xl px-5 py-3 text-white outline-none">
+                    </div>
+                    <div>
+                        <label class="text-xs font-bold text-green-400 block mb-1.5">รหัสผ่าน</label>
+                        <input id="login-pass" type="password" placeholder="รหัสผ่านของคุณ" class="w-full bg-black border border-green-800 focus:border-green-500 rounded-2xl px-5 py-3 text-white outline-none">
+                    </div>
+                    <button onclick="loginUser()" class="w-full py-4 font-black text-lg bg-zinc-800 hover:bg-zinc-700 border border-green-700 rounded-3xl transition-all active:scale-[0.985]">
+                        เข้าสู่ระบบ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div id="main-content" class="hidden max-w-7xl mx-auto px-6 pt-6 pb-12 relative z-10">
+        
+        <div class="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-y-4">
+            <div>
+                <div id="welcome-text" class="text-3xl font-black tracking-tighter"></div>
+                <div id="exam-info-text" class="text-green-400 text-sm font-mono mt-0.5"></div>
+            </div>
+            
+            <div class="flex items-center gap-x-3">
+                <div id="exam-status-badge" class="px-5 py-2.5 rounded-3xl flex items-center gap-x-2 text-sm font-bold border border-green-700 bg-zinc-950">
+                    <!-- JS populated -->
+                </div>
+                <button onclick="openDevModal()" class="px-4 py-2.5 text-xs font-bold bg-zinc-900 border border-green-900 hover:bg-zinc-800 rounded-2xl flex items-center gap-x-2">
+                    <i class="fas fa-shield-alt"></i> <span class="hidden md:inline">ผู้ดูแล</span>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Announcement -->
+        <div id="announcement-box" class="hidden mb-8 bg-zinc-950 border border-yellow-600 rounded-3xl p-5">
+            <div class="flex items-center gap-x-3 mb-2">
+                <i class="fas fa-bullhorn text-yellow-400 text-xl"></i>
+                <div class="font-bold text-yellow-300">ประกาศจากผู้ดูแลระบบ</div>
+            </div>
+            <div id="announcement-text" class="text-white text-sm leading-relaxed"></div>
+            <div id="announcement-time" class="text-xs text-yellow-500 mt-2"></div>
+        </div>
+        
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- EXAM PANEL -->
+            <div class="lg:col-span-7">
+                <div class="bg-zinc-950 border border-green-800 rounded-3xl p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <span class="section-title text-green-300">ข้อสอบคณิตศาสตร์ทหาร</span>
+                            <div class="text-xs text-green-500 mt-1">20 ข้อ • ระดับ ป.6 • เวลา 20 นาที • ผ่าน 30 คะแนนขึ้นไป</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs text-zinc-400">คะแนนเต็ม</div>
+                            <div class="text-3xl font-black text-green-400">40</div>
+                        </div>
+                    </div>
+                    
+                    <div id="exam-not-taken">
+                        <div class="bg-black/60 border border-green-900 rounded-2xl p-5 mb-4">
+                            <div class="flex items-start gap-x-4">
+                                <div class="text-5xl">📝</div>
+                                <div class="flex-1">
+                                    <div class="font-bold text-lg mb-1">พร้อมทดสอบความรู้ 20 ข้อแล้วหรือยัง?</div>
+                                    <div class="text-sm text-zinc-400 leading-relaxed">
+                                        ข้อสอบประกอบด้วยสถานการณ์จริงจาก 20 หน่วย/กรมทหาร<br>
+                                        ผสมการคำนวณพื้นฐาน (บวก ลบ คูณ หาร) ระดับ ป.6<br>
+                                        <span class="font-bold text-yellow-400">ทำได้เพียง 1 ครั้งเท่านั้น</span> • ห้ามย้อนกลับ
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <button onclick="startExam()" class="w-full py-4 text-xl font-black tracking-wider bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 active:scale-[0.985] transition-all rounded-3xl shadow-[0_10px_30px_rgb(16,185,129,0.4)] flex items-center justify-center gap-x-3">
+                            <i class="fas fa-play fa-lg"></i>
+                            <span>เริ่มทำข้อสอบ 20 ข้อ (20 นาที)</span>
+                        </button>
+                        <div class="text-center text-xs text-zinc-500 mt-3">⚠️ หลังเริ่มแล้วจะไม่สามารถย้อนกลับหรือทำใหม่ได้ จนกว่าจะสอบเสร็จ</div>
+                    </div>
+                    
+                    <div id="exam-taken" class="hidden">
+                        <div class="text-center py-4">
+                            <div class="text-sm text-green-400 mb-1">คุณได้ทำข้อสอบไปแล้ว</div>
+                            <div id="taken-score" class="text-6xl font-black tabular-nums text-white"></div>
+                            <div class="text-sm text-zinc-400">/ 40 คะแนน</div>
+                            <div id="taken-status" class="mt-2 text-lg font-bold"></div>
+                            <div class="mt-4 text-xs text-zinc-400">คะแนน + รายละเอียดถูกบันทึกถาวร • ไม่สามารถทำใหม่ได้</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- LEADERBOARD -->
+            <div class="lg:col-span-5">
+                <div class="bg-zinc-950 border border-green-800 rounded-3xl p-5 h-full">
+                    <div class="flex items-center justify-between mb-4 px-1">
+                        <span class="section-title text-green-300 flex items-center gap-x-2">
+                            <i class="fas fa-trophy"></i> 
+                            <span>กระดานคะแนนสูงสุด</span>
+                        </span>
+                        <span class="text-xs px-3 py-1 bg-green-950 text-green-400 rounded-full font-mono border border-green-800">เรียงตามคะแนน</span>
+                    </div>
+                    
+                    <div class="max-h-[320px] overflow-auto custom-scroll pr-1" id="leaderboard-container">
+                        <!-- JS populated -->
+                    </div>
+                    
+                    <div class="mt-3 text-[10px] text-center text-zinc-500 border-t border-green-900 pt-3">
+                        เจ้าของจะคัด 5 อันดับสูงสุด (30+ คะแนน) เพื่อเรียกฝึก<br>
+                        หากน้อยกว่า 5 คน จะพิจารณาจากผู้ได้ 20-29 คะแนน
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+        
+        <!-- My Rank Card -->
+        <div id="my-rank-card" class="hidden mt-6 max-w-md mx-auto">
+            <div class="bg-zinc-950 border border-green-700 rounded-3xl px-6 py-4 flex items-center gap-x-4">
+                <div class="flex-1">
+                    <div class="text-xs text-green-400">อันดับของคุณในกระดาน</div>
+                    <div id="my-rank-text" class="text-2xl font-black"></div>
+                </div>
+                <div class="text-right">
+                    <div id="my-score-text" class="text-4xl font-black text-green-400 tabular-nums"></div>
+                    <div id="my-status-text" class="text-xs font-bold"></div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <!-- EXAM AREA -->
+    <div id="exam-area" class="hidden max-w-4xl mx-auto px-6 pb-16 relative z-10">
+        <div class="bg-zinc-950 border border-green-700 rounded-3xl overflow-hidden">
+            
+            <div class="bg-black/70 px-6 py-4 flex items-center justify-between border-b border-green-800">
+                <div class="flex items-center gap-x-3">
+                    <div class="text-xl font-black">ข้อสอบคณิตศาสตร์ทหาร 20 ข้อ</div>
+                    <div id="exam-progress" class="px-4 py-1 bg-green-950 text-green-400 text-xs font-mono rounded-full border border-green-700">ข้อที่ 1 / 20</div>
+                </div>
+                
+                <div class="flex items-center gap-x-4">
+                    <div class="text-right">
+                        <div class="text-xs text-zinc-400">เวลาที่เหลือ</div>
+                        <div id="exam-timer" class="exam-timer text-3xl font-black text-green-400 tabular-nums">20:00</div>
+                    </div>
+                    <button onclick="confirmExitExam()" class="px-4 py-2 text-xs bg-red-950 hover:bg-red-900 text-red-400 rounded-2xl border border-red-900 flex items-center gap-x-2">
+                        <i class="fas fa-times"></i> <span>ออกจากสอบ</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-8">
+                <div id="question-dept-badge" class="inline-block px-5 py-1.5 text-sm font-black tracking-wider rounded-2xl dept-badge mb-3"></div>
+                
+                <div id="question-scenario" class="text-xl font-bold text-green-300 mb-1"></div>
+                <div id="question-text" class="text-2xl leading-tight font-medium mb-8"></div>
+                
+                <div class="max-w-md">
+                    <label class="text-xs font-bold text-green-400 block mb-2">คำตอบของคุณ (ตัวเลขเท่านั้น)</label>
+                    <input id="answer-input" type="number" class="w-full bg-black border-2 border-green-700 focus:border-green-400 rounded-2xl px-6 py-4 text-4xl font-black text-center outline-none tabular-nums" placeholder="0">
+                    
+                    <div class="flex gap-x-3 mt-4">
+                        <button onclick="submitAnswerAndNext()" id="next-btn"
+                                class="flex-1 py-4 font-black text-lg bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 rounded-3xl transition-all active:scale-[0.985] flex items-center justify-center gap-x-2">
+                            <span id="next-btn-text">ยืนยันคำตอบและไปข้อถัดไป</span>
+                            <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                    
+                    <div class="text-center text-xs text-zinc-500 mt-3">ห้ามย้อนกลับ • ตอบให้ครบทุกข้อก่อนส่ง</div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <footer class="border-t border-green-900 py-8 text-center text-xs text-green-600 relative z-10">
+        <div>พัฒนาโดย <span class="font-bold text-green-400">sorawit0023</span> • RTA Math Exam Final • Dev: Costfourtigger • DISCORD: sorawit0023</div>
+    </footer>
+    
+    <!-- Result Modal -->
+    <div id="result-modal" onclick="if (event.target.id === 'result-modal') closeResultModal()" class="hidden fixed inset-0 bg-black/95 z-[200] flex items-center justify-center p-6">
+        <div onclick="event.stopImmediatePropagation()" class="bg-zinc-950 border border-green-700 rounded-3xl w-full max-w-2xl modal overflow-hidden">
+            
+            <div id="pass-result" class="hidden">
+                <div class="p-8 text-center">
+                    <div class="text-7xl mb-4">🎖️</div>
+                    <div class="text-5xl font-black tracking-tighter text-green-400 mb-2">คุณสอบผ่าน!</div>
+                    <div class="text-xl text-white mb-6">คะแนน <span id="pass-score" class="font-black text-3xl"></span> / 40</div>
+                    
+                    <div class="bg-green-950/60 border border-green-700 rounded-2xl p-6 text-left text-sm leading-relaxed mb-6">
+                        ยินดีด้วยอย่างยิ่ง! คุณได้แสดงถึงความสามารถในการคำนวณอย่างแม่นยำและเข้าใจสถานการณ์ทางทหารจาก 20 หน่วย/กรมได้อย่างยอดเยี่ยม คะแนนของคุณสะท้อนถึงความพร้อม ความมีระเบียบวินัย และศักยภาพในการเป็นทหารที่ดีของกองทัพไทย<br><br>
+                        <span class="font-bold text-green-300">แคปหน้าจอนี้ทันที</span> และส่งให้หัวหน้าฝ่ายดิสคอร์ด <span class="font-bold">sorawit0023</span> พร้อมรหัสประจำตัวข้อสอบของคุณ เพื่อรับการฝึกต่อไปและรับตรากรม!<br><br>
+                        เราภูมิใจในตัวคุณมาก การผ่านครั้งนี้คือก้าวสำคัญสู่การเป็นส่วนหนึ่งของครอบครัว RTA
+                    </div>
+                    
+                    <div class="text-xs text-green-400">DISCORD: sorawit0023 • ติดต่อเพื่อรับการฝึกและตรากรม</div>
+                </div>
+            </div>
+            
+            <div id="fail-result" class="hidden">
+                <div class="p-8 text-center">
+                    <div class="text-7xl mb-4">💪</div>
+                    <div class="text-4xl font-black tracking-tighter text-red-400 mb-2">คุณสอบไม่ผ่าน</div>
+                    <div class="text-xl text-white mb-2">ไว้โอกาสหน้านะ ขอชื่นชมนะ!</div>
+                    <div class="text-sm text-zinc-400 mb-6">คะแนน <span id="fail-score" class="font-black"></span> / 40</div>
+                    
+                    <div class="bg-red-950/40 border border-red-900 rounded-2xl p-6 text-left text-sm leading-relaxed mb-6">
+                        เสียใจด้วยที่ผลการสอบยังไม่เป็นไปตามที่คาดหวัง แต่ขอชื่นชมและยกย่องความกล้าหาญและความพยายามของคุณอย่างเต็มที่! การสอบ 20 ข้อนี้เป็นเพียงบททดสอบเล็กๆ ในเส้นทางสู่การเป็นทหารที่แท้จริง<br><br>
+                        อย่าท้อแท้หรือท้อใจไปเลยนะครับ การคำนวณและความเข้าใจสถานการณ์สามารถฝึกฝนได้ การที่คุณกล้าลองทำข้อสอบนี้แสดงให้เห็นถึงจิตวิญญาณนักสู้แล้ว<br><br>
+                        <span class="font-bold text-yellow-300">0-19 คะแนน:</span> เสียใจด้วย ไม่มีโอกาสเรียกในรอบนี้<br>
+                        <span class="font-bold text-yellow-300">20-29 คะแนน:</span> คุณยังมีโอกาสลุ้นถูกเรียก! เจ้าของจะพิจารณาเพิ่มเติม<br><br>
+                        ทบทวนบทเรียน ฝึกทำโจทย์เพิ่ม และกลับมาสู้ใหม่ในโอกาสหน้า เรายังเชื่อมั่นในตัวคุณเสมอ!
+                    </div>
+                    
+                    <button onclick="closeResultModal()" class="px-10 py-3 text-sm font-bold bg-zinc-800 hover:bg-zinc-700 rounded-2xl">ปิดหน้าต่าง</button>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    
+    <!-- Dev Modal -->
+    <div id="dev-modal" onclick="if (event.target.id === 'dev-modal') closeDevModal()" class="hidden fixed inset-0 bg-black/90 z-[100] flex items-center justify-center p-6">
+        <div onclick="event.stopImmediatePropagation()" class="bg-zinc-950 border border-green-700 rounded-3xl w-full max-w-5xl modal max-h-[92vh] overflow-auto">
+            
+            <div id="dev-login-view">
+                <div class="p-8">
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="flex items-center gap-x-3">
+                            <i class="fas fa-shield-alt text-3xl text-green-400"></i>
+                            <div>
+                                <div class="font-black text-2xl">เมนูผู้ดูแลระบบ (Dev)</div>
+                                <div class="text-xs text-green-500">รหัสผ่าน: Costfourtigger (ไม่เปิดเผย)</div>
+                            </div>
+                        </div>
+                        <button onclick="closeDevModal()" class="text-2xl text-zinc-400 hover:text-white">&times;</button>
+                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="text-xs font-bold text-green-400 block mb-1.5">รหัสผ่านผู้ดูแล</label>
+                            <input id="dev-password" type="password" value="Costfourtigger" class="w-full bg-black border border-green-800 focus:border-green-500 rounded-2xl px-5 py-3 text-white outline-none">
+                        </div>
+                        <button onclick="loginDev()" class="w-full py-3.5 font-bold bg-green-600 hover:bg-green-500 transition-colors rounded-2xl">เข้าสู่ระบบผู้ดูแล</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="dev-panel-view" class="hidden p-7">
+                <div class="flex justify-between items-center mb-6">
+                    <div class="font-black text-xl flex items-center gap-x-2">
+                        <i class="fas fa-user-shield"></i> <span>แผงควบคุมผู้ดูแล</span>
+                    </div>
+                    <button onclick="logoutDev()" class="text-xs px-4 py-1 bg-zinc-800 hover:bg-zinc-700 rounded-2xl">ออกจากระบบ</button>
+                </div>
+                
+                <!-- Users Management -->
+                <div class="mb-6">
+                    <div class="text-xs font-bold text-green-400 mb-2 flex justify-between">
+                        <span>ผู้ใช้ทั้งหมด + รายละเอียดการสอบ</span>
+                        <span id="user-count" class="px-2 py-px bg-green-950 rounded text-green-400 text-xs"></span>
+                    </div>
+                    <div id="users-list" class="max-h-[240px] overflow-auto pr-1 text-sm space-y-2 custom-scroll"></div>
+                </div>
+                
+                <!-- NEW: Exam Codes Management -->
+                <div class="mb-6 border-t border-yellow-900 pt-5">
+                    <div class="text-xs font-bold text-yellow-400 mb-2 flex items-center gap-x-2">
+                        <i class="fas fa-key"></i> <span>จัดการรหัสประจำตัวข้อสอบ (AA01 - AA08 + เพิ่มได้)</span>
+                    </div>
+                    <div class="flex gap-x-2 mb-3">
+                        <input id="new-exam-code" type="text" placeholder="รหัสใหม่ (เช่น AA09)" class="flex-1 bg-black border border-yellow-700 focus:border-yellow-400 rounded-2xl px-4 py-2 text-sm font-mono uppercase outline-none">
+                        <button onclick="addNewExamCode()" class="px-5 text-xs font-bold bg-yellow-600 hover:bg-yellow-500 text-black rounded-2xl">เพิ่มรหัส</button>
+                    </div>
+                    <div id="exam-codes-list" class="max-h-[120px] overflow-auto custom-scroll text-xs border border-yellow-900 rounded-2xl p-2 bg-black/40"></div>
+                </div>
+                
+                <!-- Question Management -->
+                <div class="mb-6 border-t border-green-900 pt-5">
+                    <div class="text-xs font-bold text-yellow-400 mb-2 flex items-center gap-x-2">
+                        <i class="fas fa-edit"></i> <span>จัดการข้อสอบ (20 ข้อ)</span>
+                    </div>
+                    <button onclick="showQuestionManager()" class="px-5 py-2 text-xs font-bold bg-yellow-600 hover:bg-yellow-500 text-black rounded-2xl">เปิดตัวจัดการข้อสอบ</button>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <button onclick="clearAllData()" class="py-2.5 text-xs font-bold bg-red-950 hover:bg-red-900 text-red-400 border border-red-900 rounded-2xl flex items-center justify-center gap-x-2">
+                        <i class="fas fa-trash"></i> ล้างข้อมูลทั้งหมด
+                    </button>
+                    <button onclick="exportAllData()" class="py-2.5 text-xs font-bold bg-zinc-800 hover:bg-zinc-700 border border-green-900 rounded-2xl flex items-center justify-center gap-x-2">
+                        <i class="fas fa-download"></i> Export ข้อมูลทั้งหมด
+                    </button>
+                </div>
+                
+                <!-- Announcement -->
+                <div class="mt-6 pt-5 border-t border-green-900">
+                    <div class="text-xs font-bold text-yellow-400 mb-2 flex items-center gap-x-2">
+                        <i class="fas fa-bullhorn"></i> <span>โพสต์ประกาศหน้าเว็บ</span>
+                    </div>
+                    <textarea id="announce-text" rows="3" placeholder="เขียนประกาศที่นี่..." class="w-full bg-black border border-yellow-700 focus:border-yellow-500 rounded-2xl px-4 py-3 text-sm outline-none resize-y"></textarea>
+                    <button onclick="postAnnouncement()" class="mt-2 w-full py-2.5 text-sm font-bold bg-yellow-600 hover:bg-yellow-500 text-black rounded-2xl flex items-center justify-center gap-x-2">
+                        <i class="fas fa-paper-plane"></i> โพสต์ประกาศ
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- User Exam Detail Modal (for Dev) -->
+    <div id="detail-modal" onclick="if (event.target.id === 'detail-modal') closeDetailModal()" class="hidden fixed inset-0 bg-black/90 z-[150] flex items-center justify-center p-6">
+        <div onclick="event.stopImmediatePropagation()" class="bg-zinc-950 border border-green-700 rounded-3xl w-full max-w-5xl modal max-h-[90vh] overflow-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <div>
+                        <div class="font-black text-xl">รายละเอียดการสอบของ <span id="detail-user-name" class="text-green-400"></span></div>
+                        <div class="text-xs text-yellow-400 font-mono" id="detail-exam-code"></div>
+                    </div>
+                    <button onclick="closeDetailModal()" class="text-2xl text-zinc-400 hover:text-white">&times;</button>
+                </div>
+                
+                <div class="mb-4 flex items-center gap-x-4 text-sm">
+                    <div>คะแนนรวม: <span id="detail-total-score" class="font-black text-2xl text-green-400"></span> / 40</div>
+                    <div id="detail-status-badge"></div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs border border-green-900">
+                        <thead class="bg-black/60">
+                            <tr>
+                                <th class="px-3 py-2 text-left w-8">#</th>
+                                <th class="px-3 py-2 text-left">กรม / หน่วย</th>
+                                <th class="px-3 py-2 text-left">คำถาม</th>
+                                <th class="px-3 py-2 text-center w-20">คำตอบผู้ใช้</th>
+                                <th class="px-3 py-2 text-center w-20">คำตอบที่ถูก</th>
+                                <th class="px-3 py-2 text-center w-16">ผล</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detail-table-body" class="divide-y divide-green-900 text-sm">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Question Manager Modal (for Dev) -->
+    <div id="question-manager-modal" onclick="if (event.target.id === 'question-manager-modal') closeQuestionManager()" class="hidden fixed inset-0 bg-black/90 z-[160] flex items-center justify-center p-6">
+        <div onclick="event.stopImmediatePropagation()" class="bg-zinc-950 border border-yellow-700 rounded-3xl w-full max-w-6xl modal max-h-[92vh] overflow-auto">
+            <div class="p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <div class="font-black text-xl flex items-center gap-x-2 text-yellow-400">
+                        <i class="fas fa-edit"></i> <span>ตัวจัดการข้อสอบ (20 ข้อ)</span>
+                    </div>
+                    <button onclick="closeQuestionManager()" class="text-2xl">&times;</button>
+                </div>
+                
+                <div class="mb-4">
+                    <button onclick="addNewQuestion()" class="px-5 py-2 bg-yellow-600 hover:bg-yellow-500 text-black text-sm font-bold rounded-2xl">+ เพิ่มข้อสอบใหม่</button>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs">
+                        <thead>
+                            <tr class="bg-black/60 border-b border-yellow-800">
+                                <th class="px-2 py-2 w-8">#</th>
+                                <th class="px-2 py-2">กรม / หน่วย</th>
+                                <th class="px-2 py-2">สถานการณ์</th>
+                                <th class="px-2 py-2">คำถาม</th>
+                                <th class="px-2 py-2 w-16">คำตอบ</th>
+                                <th class="px-2 py-2 w-24">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="question-manager-body" class="divide-y divide-yellow-900"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function initTailwind() {}
+        
+        let snowCanvas, snowCtx, snowflakes = [];
+        function initSnow() {
+            snowCanvas = document.getElementById('snow-canvas');
+            snowCtx = snowCanvas.getContext('2d');
+            function resize() { snowCanvas.width = window.innerWidth; snowCanvas.height = window.innerHeight; }
+            window.addEventListener('resize', resize); resize();
+            
+            snowflakes = [];
+            for (let i = 0; i < 80; i++) {
+                snowflakes.push({ x: Math.random() * snowCanvas.width, y: Math.random() * snowCanvas.height, size: Math.random() * 3.2 + 1.8, speed: Math.random() * 1.1 + 0.7, opacity: Math.random() * 0.55 + 0.35, wind: Math.random() * 0.5 - 0.25 });
+            }
+            
+            function draw() {
+                snowCtx.clearRect(0, 0, snowCanvas.width, snowCanvas.height);
+                snowCtx.fillStyle = '#fff'; snowCtx.shadowBlur = 4; snowCtx.shadowColor = '#a3e635';
+                for (let f of snowflakes) {
+                    snowCtx.globalAlpha = f.opacity;
+                    snowCtx.beginPath(); snowCtx.arc(f.x, f.y, f.size, 0, Math.PI * 2); snowCtx.fill();
+                    f.y += f.speed; f.x += f.wind;
+                    if (f.y > snowCanvas.height) { f.y = -4; f.x = Math.random() * snowCanvas.width; }
+                    if (f.x > snowCanvas.width) f.x = 0; if (f.x < 0) f.x = snowCanvas.width;
+                }
+                snowCtx.shadowBlur = 0; snowCtx.globalAlpha = 1;
+                requestAnimationFrame(draw);
+            }
+            draw();
+        }
+        
+        // 20 Questions
+        let questions = [
+            { dept: "กรมยุทธศึกษาทหารบก (ครูฝึก)", color: "bg-yellow-300 text-yellow-900 border-yellow-400", scenario: "ครูฝึกตรวจนับยอดทหารใหม่ในแถว", q: "มีทหารใหม่เข้าฝึกทั้งหมด 40 นาย ลาป่วยไป 3 นาย และถูกส่งไปช่วยงานกองร้อยอีก 5 นาย จะเหลือทหารใหม่ฝึกในสนามกี่นาย?", ans: 32 },
+            { dept: "กองบัญชาการ", color: "bg-yellow-600 text-white border-yellow-500", scenario: "การแจกจ่ายวิทยุสื่อสารให้หน่วยขึ้นตรง", q: "กองบัญชาการมีวิทยุสื่อสาร 50 เครื่อง แจกให้กองร้อยที่หนึ่ง 15 เครื่อง แจกให้กองร้อยที่สอง 20 เครื่อง จะเหลือวิทยุเก็บไว้ที่คลังกองบัญชาการกี่เครื่อง?", ans: 15 },
+            { dept: "สารวัตรทหารบก (สห.ทบ.)", color: "bg-blue-600 text-white border-blue-500", scenario: "การจัดรถมอเตอร์ไซค์นำขบวนบุคคลสำคัญ + การแต่งกายที่ถูกต้อง", q: "มีรถมอเตอร์ไซค์ สห. ทั้งหมด 12 คัน ต้องการจัดเป็น ขบวนละ 4 คัน เท่าๆ กัน จะสามารถจัดรถนำขบวนได้ทั้งหมดกี่ขบวน?", ans: 3 },
+            { dept: "ทหารม้า (รักษาพระองค์)", color: "bg-cyan-500 text-white border-cyan-400", scenario: "การเติมน้ำมันรถถังก่อนออกปฏิบัติการ", q: "รถถังคันหนึ่งมีน้ำมันเหลือค้างถังอยู่ 50 ลิตร เติมเพิ่มเข้าไปอีก 150 ลิตร แต่ระหว่างเดินทางใช้ไป 80 ลิตร จะเหลือน้ำมันในถังอีกกี่ลิตร?", ans: 120 },
+            { dept: "ทหารมหาดเล็กราชวัลลภรักษาพระองค์", color: "bg-pink-500 text-white border-pink-400", scenario: "การจัดกำลังพลยืนประจำจุดถวายความปลอดภัย", q: "มีจุดตรวจที่ต้องยืนเฝ้าทั้งหมด 6 จุด แต่ละจุดใช้ทหารประจำการจุดละ 3 นาย อยากทราบว่าต้องใช้กำลังพลรวมทั้งหมดกี่นาย?", ans: 18 },
+            { dept: "การแพทย์ทหาร", color: "bg-green-600 text-white border-green-500", scenario: "การจัดชุดปฐมพยาบาลสนาม", q: "ในคลังมีกล่องยาแผลสดอยู่ 30 กล่อง แบ่งแจกให้หมวดปืนเล็ก 3 หมวด หมวดละเท่าๆ กัน แต่ละหมวดจะได้รับกล่องยาแผลสดคนละกี่กล่อง?", ans: 10 },
+            { dept: "สงครามทางเรือ (ซีล)", color: "bg-blue-900 text-white border-blue-700", scenario: "การเตรียมแพยางจู่โจม", q: "แพยาง 1 ลำ สามารถบรรทุกนักทำลายใต้น้ำจู่โจมได้ 8 นาย ถ้ามีนักทำลายใต้น้ำจู่โจมทั้งหมด 24 นาย ต้องเตรียมแพยางอย่างน้อยกี่ลำ?", ans: 3 },
+            { dept: "นาวิกโยธิน", color: "bg-red-600 text-white border-red-500", scenario: "การเบิกกระสุนปืนเล็กยาวก่อนขึ้นเหยียบหาด", q: "ทหารนาวิกโยธินคนหนึ่งเบิกกระสุนมา 90 นัด ยิงต่อสู้กับข้าศึกไป 30 นัด และส่งต่อให้เพื่อนในหมู่รบที่กระสุนหมดอีก 15 นัด ทหารนายนี้จะเหลือกระสุนกี่นัด?", ans: 45 },
+            { dept: "ทหารพราน", color: "bg-zinc-500 text-white border-zinc-400", scenario: "การเสบียงอาหารแห้งขณะลาดตระเวนชายแดน", q: "ชุดปฏิบัติการทหารพรานมีปลากระป๋องอยู่ 18 กระป๋อง เดินป่าไปแล้ว 2 วัน กินไปวันละ 4 กระป๋อง จะเหลือปลากระป๋องประทังชีวิตอีกกี่กระป๋อง?", ans: 10 },
+            { dept: "กรมทหารปืนใหญ่", color: "bg-orange-600 text-white border-orange-500", scenario: "การบรรจุกระสุนปืนใหญ่ก่อนยิงฝึก", q: "มีกระสุนปืนใหญ่ทั้งหมด 180 นัด ใช้ไป 35 นัดในรอบแรก และใช้ไปอีก 48 นัดในรอบสอง จะเหลือกระสุนกี่นัด?", ans: 97 },
+            { dept: "กรมทหารราบ", color: "bg-emerald-600 text-white border-emerald-500", scenario: "การแบ่งกำลังพลเป็นหมวด", q: "มีทหารราบทั้งหมด 85 นาย ต้องการแบ่งเป็น 5 หมวดเท่าๆ กัน แต่ละหมวดจะมีทหารกี่นาย?", ans: 17 },
+            { dept: "หน่วยรบพิเศษ", color: "bg-violet-600 text-white border-violet-500", scenario: "การคำนวณความเร็วในการเดินทาง", q: "หน่วยรบพิเศษเดินทางไประยะทาง 12 กิโลเมตร ใช้เวลา 4 ชั่วโมง อัตราความเร็วเฉลี่ยกี่กิโลเมตรต่อชั่วโมง?", ans: 3 },
+            { dept: "กรมการเงินทหาร", color: "bg-amber-600 text-white border-amber-500", scenario: "การคำนวณเงินเดือนหลังหักภาษี", q: "ทหารได้รับเงินเดือน 25,000 บาท ถูกหักภาษีและประกันสังคม 3,500 บาท จะได้รับเงินสุทธิเท่าไหร่?", ans: 21500 },
+            { dept: "กรมส่งกำลังบำรุง", color: "bg-lime-600 text-white border-lime-500", scenario: "การแจกจ่ายเสบียงให้หน่วย", q: "มีข้าวสาร 120 กระสอบ ต้องการแจกจ่ายให้ 8 หน่วยย่อยเท่าๆ กัน แต่ละหน่วยจะได้รับข้าวสารกี่กระสอบ?", ans: 15 },
+            { dept: "ทหารอากาศ", color: "bg-sky-500 text-white border-sky-400", scenario: "การคำนวณเชื้อเพลิงเครื่องบิน", q: "เครื่องบินมีเชื้อเพลิงเหลือ 950 ลิตร ใช้ไปในการบินฝึก 275 ลิตร จะเหลือเชื้อเพลิงกี่ลิตร?", ans: 675 },
+            { dept: "กรมสารวัตรทหาร", color: "bg-indigo-600 text-white border-indigo-500", scenario: "การแบ่งห้องคุมขังนักโทษ", q: "มีนักโทษทางทหาร 45 คน ต้องการแบ่งเข้าห้องคุมขัง 9 ห้องเท่าๆ กัน แต่ละห้องจะมีนักโทษกี่คน?", ans: 5 },
+            { dept: "หน่วยสื่อสาร", color: "bg-teal-600 text-white border-teal-500", scenario: "การวางสายเคเบิลสื่อสาร", q: "มีสายเคเบิลสื่อสารยาว 360 เมตร ต้องการวางให้ครบ 8 วันเท่าๆ กัน วันละกี่เมตร?", ans: 45 },
+            { dept: "กรมทหารช่าง", color: "bg-stone-600 text-white border-stone-500", scenario: "การคำนวณวัสดุสร้างสะพาน", q: "ต้องการสร้างสะพานยาว 45 เมตร ใช้ไม้ท่อนละ 5 เมตร จะต้องใช้ไม้ทั้งหมดกี่ท่อน?", ans: 9 },
+            { dept: "กรมแพทย์ทหาร", color: "bg-rose-600 text-white border-rose-500", scenario: "การจัดเตียงผู้ป่วยในสนาม", q: "มีผู้ป่วยบาดเจ็บ 72 คน ต้องการจัดเตียง 6 เตียงเท่าๆ กัน แต่ละเตียงจะรองรับผู้ป่วยกี่คน?", ans: 12 },
+            { dept: "กรมยุทธการ", color: "bg-fuchsia-600 text-white border-fuchsia-500", scenario: "การคำนวณระยะทางบนแผนที่", q: "แผนที่มาตราส่วน 1:50,000 ระยะทางจริงระหว่างจุดสองจุดคือ 2.5 กิโลเมตร ระยะทางบนแผนที่จะยาวกี่เซนติเมตร?", ans: 5 }
+        ];
+        
+        function getQuestions() {
+            const saved = localStorage.getItem('rta_exam_questions_final');
+            if (saved) { try { return JSON.parse(saved); } catch(e) {} }
+            return questions;
+        }
+        function saveQuestions(qs) { localStorage.setItem('rta_exam_questions_final', JSON.stringify(qs)); }
+        
+        // ========== EXAM CODES SYSTEM ==========
+        function getExamCodes() {
+            let codes = JSON.parse(localStorage.getItem('rta_exam_codes') || 'null');
+            if (!codes) {
+                codes = ["AA01", "AA02", "AA03", "AA04", "AA05", "AA06", "AA08"];
+                localStorage.setItem('rta_exam_codes', JSON.stringify(codes));
+            }
+            return codes;
+        }
+        function saveExamCodes(codes) { localStorage.setItem('rta_exam_codes', JSON.stringify(codes)); }
+        
+        function getUsers() { return JSON.parse(localStorage.getItem('rta_exam_users_final') || '[]'); }
+        function saveUsers(users) { localStorage.setItem('rta_exam_users_final', JSON.stringify(users)); }
+        function getCurrentUser() { return localStorage.getItem('rta_exam_current_user_final'); }
+        function setCurrentUser(name) { localStorage.setItem('rta_exam_current_user_final', name); }
+        function clearCurrentUser() { localStorage.removeItem('rta_exam_current_user_final'); }
+        function getUserData(name) { return getUsers().find(u => u.name === name); }
+        function updateUserData(name, updates) {
+            const users = getUsers();
+            const idx = users.findIndex(u => u.name === name);
+            if (idx !== -1) { 
+                users[idx] = { ...users[idx], ...updates }; 
+                saveUsers(users); 
+                if (currentUser && currentUser.name === name) currentUser = users[idx];
+            }
+        }
+        function getAnnouncements() { return JSON.parse(localStorage.getItem('rta_exam_announcements_final') || '[]'); }
+        function saveAnnouncements(announcements) { localStorage.setItem('rta_exam_announcements_final', JSON.stringify(announcements)); }
+        
+        function generateExamId() {
+            return 'RTA-' + Date.now().toString(36).slice(-6).toUpperCase();
+        }
+        
+        function showAuthTab(tab) {
+            document.getElementById('auth-register').classList.toggle('hidden', tab !== 'register');
+            document.getElementById('auth-login').classList.toggle('hidden', tab !== 'login');
+            document.getElementById('tab-register').classList.toggle('border-b-2', tab === 'register');
+            document.getElementById('tab-register').classList.toggle('text-green-300', tab === 'register');
+            document.getElementById('tab-register').classList.toggle('text-zinc-400', tab !== 'register');
+            document.getElementById('tab-login').classList.toggle('border-b-2', tab === 'login');
+            document.getElementById('tab-login').classList.toggle('text-green-300', tab === 'login');
+            document.getElementById('tab-login').classList.toggle('text-zinc-400', tab !== 'login');
+        }
+        
+        function registerUser() {
+            const name = document.getElementById('reg-name').value.trim();
+            const pass = document.getElementById('reg-pass').value.trim();
+            const pass2 = document.getElementById('reg-pass2').value.trim();
+            const examCodeInput = document.getElementById('reg-exam-code').value.trim().toUpperCase();
+            
+            if (!name || !pass) { alert('กรุณากรอกชื่อและรหัสผ่าน'); return; }
+            if (pass.length < 4) { alert('รหัสผ่านต้องมีอย่างน้อย 4 ตัวอักษร'); return; }
+            if (pass !== pass2) { alert('รหัสผ่านไม่ตรงกัน'); return; }
+            
+            const users = getUsers();
+            if (users.find(u => u.name.toLowerCase() === name.toLowerCase())) { alert('ชื่อนี้มีผู้ใช้แล้ว'); return; }
+            
+            let examCode = null;
+            if (examCodeInput) {
+                const validCodes = getExamCodes();
+                if (!validCodes.includes(examCodeInput)) {
+                    alert('รหัสประจำตัวข้อสอบไม่ถูกต้อง หรือยังไม่ได้ถูกเพิ่มโดยผู้ดูแล');
+                    return;
+                }
+                // Check if code already used
+                if (users.find(u => u.examCode === examCodeInput)) {
+                    alert('รหัสประจำตัวข้อสอบนี้ถูกใช้ไปแล้ว');
+                    return;
+                }
+                examCode = examCodeInput;
+            }
+            
+            const newUser = { 
+                name, 
+                pass, 
+                examId: generateExamId(),
+                examCode: examCode,
+                created: new Date().toISOString(),
+                examTaken: false,
+                score: 0,
+                examDate: null,
+                userAnswers: null
+            };
+            users.push(newUser); 
+            saveUsers(users);
+            setCurrentUser(name); 
+            currentUser = newUser;
+            hideAuthGate(); 
+            updateUIAfterLogin();
+            
+            let msg = 'สร้างบัญชีสำเร็จ!';
+            if (examCode) msg += ' รหัสประจำตัวข้อสอบของคุณคือ ' + examCode;
+            showToast(msg, 'green');
+        }
+        
+        function loginUser() {
+            const name = document.getElementById('login-name').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+            const user = getUserData(name);
+            if (!user || user.pass !== pass) { alert('ชื่อหรือรหัสผ่านไม่ถูกต้อง'); return; }
+            setCurrentUser(name); 
+            currentUser = user;
+            hideAuthGate(); 
+            updateUIAfterLogin();
+        }
+        
+        function logoutUser() {
+            clearCurrentUser(); 
+            currentUser = null;
+            document.getElementById('main-content').classList.add('hidden');
+            document.getElementById('exam-area').classList.add('hidden');
+            document.getElementById('auth-gate').classList.remove('hidden');
+            document.getElementById('user-status').innerHTML = `<button onclick="showAuthGate()" class="px-5 py-2 text-sm font-bold bg-green-600 hover:bg-green-500 rounded-2xl">เข้าสู่ระบบ / สร้างบัญชี</button>`;
+        }
+        
+        function hideAuthGate() { document.getElementById('auth-gate').classList.add('hidden'); }
+        function showAuthGate() {
+            document.getElementById('auth-gate').classList.remove('hidden');
+            document.getElementById('main-content').classList.add('hidden');
+            document.getElementById('exam-area').classList.add('hidden');
+        }
+        
+        function updateUserStatusBar() {
+            const container = document.getElementById('user-status');
+            if (!currentUser) {
+                container.innerHTML = `<button onclick="showAuthGate()" class="px-5 py-2 text-sm font-bold bg-green-600 hover:bg-green-500 rounded-2xl flex items-center gap-x-2"><i class="fas fa-user-plus"></i> <span>สร้างบัญชี / เข้าสู่ระบบ</span></button>`;
+            } else {
+                let codeBadge = '';
+                if (currentUser.examCode) {
+                    codeBadge = `<span class="ml-2 px-2 py-0.5 text-xs exam-code-badge rounded font-mono">${currentUser.examCode}</span>`;
+                }
+                container.innerHTML = `<div class="flex items-center gap-x-3 bg-zinc-950 border border-green-800 rounded-3xl px-4 py-1.5 text-sm">
+                    <div class="flex items-center gap-x-2"><i class="fas fa-user-circle text-green-400"></i> <span class="font-bold">${currentUser.name}</span>${codeBadge}</div>
+                    <button onclick="logoutUser()" class="text-xs px-3 py-1 bg-zinc-800 hover:bg-red-950 text-red-400 rounded-2xl">ออกจากระบบ</button>
+                </div>`;
+            }
+        }
+        
+        function updateUIAfterLogin() {
+            document.getElementById('main-content').classList.remove('hidden');
+            document.getElementById('welcome-text').innerHTML = `สวัสดี, <span class="text-green-300">${currentUser.name}</span>`;
+            
+            let infoHTML = `รหัสผู้ใช้: <span class="font-mono text-yellow-400">${currentUser.examId}</span>`;
+            if (currentUser.examCode) {
+                infoHTML += ` &nbsp;•&nbsp; รหัสข้อสอบ: <span class="font-mono exam-code-badge px-2 py-0.5 rounded text-xs">${currentUser.examCode}</span>`;
+            }
+            document.getElementById('exam-info-text').innerHTML = infoHTML;
+            
+            updateUserStatusBar();
+            renderExamStatus();
+            renderLeaderboard();
+            renderAnnouncement();
+            renderMyRankCard();
+        }
+        
+        function renderExamStatus() {
+            const badge = document.getElementById('exam-status-badge');
+            const notTaken = document.getElementById('exam-not-taken');
+            const taken = document.getElementById('exam-taken');
+            
+            if (!currentUser) return;
+            
+            if (!currentUser.examTaken) {
+                notTaken.classList.remove('hidden');
+                taken.classList.add('hidden');
+                badge.innerHTML = `<i class="fas fa-edit mr-2"></i> <span>ยังไม่ได้ทำข้อสอบ</span>`;
+                badge.className = `px-5 py-2.5 rounded-3xl flex items-center gap-x-2 text-sm font-bold border border-yellow-600 bg-yellow-950 text-yellow-300`;
+            } else {
+                notTaken.classList.add('hidden');
+                taken.classList.remove('hidden');
+                
+                const scoreEl = document.getElementById('taken-score');
+                const statusEl = document.getElementById('taken-status');
+                
+                scoreEl.textContent = currentUser.score;
+                
+                let statusHTML = '';
+                let badgeClass = '';
+                
+                if (currentUser.score >= 30) {
+                    statusHTML = `<span class="status-pass px-4 py-1 rounded-full text-sm">ผ่านแน่นอน • เตรียมตัวเลย!</span>`;
+                    badgeClass = `px-5 py-2.5 rounded-3xl flex items-center gap-x-2 text-sm font-bold border border-green-600 bg-green-950 text-green-300`;
+                } else if (currentUser.score >= 20) {
+                    statusHTML = `<span class="status-lucky px-4 py-1 rounded-full text-sm">ลุ้นมีโอกาสเรียก</span>`;
+                    badgeClass = `px-5 py-2.5 rounded-3xl flex items-center gap-x-2 text-sm font-bold border border-yellow-600 bg-yellow-950 text-yellow-300`;
+                } else {
+                    statusHTML = `<span class="status-fail px-4 py-1 rounded-full text-sm">ไม่ผ่าน • เสียใจด้วย</span>`;
+                    badgeClass = `px-5 py-2.5 rounded-3xl flex items-center gap-x-2 text-sm font-bold border border-red-600 bg-red-950 text-red-300`;
+                }
+                
+                statusEl.innerHTML = statusHTML;
+                badge.innerHTML = `<i class="fas fa-check-circle mr-2"></i> <span>สอบแล้ว • ${currentUser.score} คะแนน</span>`;
+                badge.className = badgeClass;
+            }
+        }
+        
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboard-container');
+            const users = getUsers().filter(u => u.examTaken);
+            
+            if (users.length === 0) {
+                container.innerHTML = `<div class="text-center py-8 text-xs text-zinc-500">ยังไม่มีผู้ทำข้อสอบ</div>`;
+                return;
+            }
+            
+            users.sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                return new Date(a.examDate) - new Date(b.examDate);
+            });
+            
+            let html = `<table class="w-full text-xs">
+                <thead><tr class="border-b border-green-900 text-green-400">
+                    <th class="py-2 px-2 text-left w-8">#</th>
+                    <th class="py-2 px-2 text-left">ชื่อในเกม</th>
+                    <th class="py-2 px-2 text-center">รหัสข้อสอบ</th>
+                    <th class="py-2 px-2 text-center">คะแนน</th>
+                    <th class="py-2 px-2 text-center">สถานะ</th>
+                </tr></thead><tbody>`;
+            
+            users.forEach((u, idx) => {
+                const rank = idx + 1;
+                let statusClass = '', statusText = '';
+                
+                if (u.score >= 30) { statusClass = 'status-pass'; statusText = 'ผ่านแน่นอน'; }
+                else if (u.score >= 20) { statusClass = 'status-lucky'; statusText = 'ลุ้นเรียก'; }
+                else { statusClass = 'status-fail'; statusText = 'ไม่ผ่าน'; }
+                
+                const isTop5 = rank <= 5 && u.score >= 30;
+                const codeHTML = u.examCode ? `<span class="exam-code-badge px-2 py-0.5 rounded text-xs font-mono">${u.examCode}</span>` : '-';
+                
+                html += `<tr class="border-b border-green-950 text-sm">
+                    <td class="py-2.5 px-2 font-mono font-bold ${isTop5 ? 'text-yellow-400' : ''}">${rank}</td>
+                    <td class="py-2.5 px-2 font-medium">${u.name}</td>
+                    <td class="py-2.5 px-2 text-center">${codeHTML}</td>
+                    <td class="py-2.5 px-2 text-center font-black tabular-nums text-xl">${u.score}</td>
+                    <td class="py-2.5 px-2 text-center"><span class="px-3 py-0.5 text-xs rounded-full font-bold ${statusClass}">${statusText}</span></td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+        
+        function renderMyRankCard() {
+            const card = document.getElementById('my-rank-card');
+            if (!currentUser || !currentUser.examTaken) {
+                card.classList.add('hidden');
+                return;
+            }
+            
+            const users = getUsers().filter(u => u.examTaken);
+            users.sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                return new Date(a.examDate) - new Date(b.examDate);
+            });
+            
+            const myIndex = users.findIndex(u => u.name === currentUser.name);
+            const myRank = myIndex + 1;
+            
+            document.getElementById('my-rank-text').innerHTML = `อันดับที่ <span class="text-yellow-400">#${myRank}</span>`;
+            document.getElementById('my-score-text').textContent = currentUser.score;
+            
+            let statusHTML = '';
+            if (currentUser.score >= 30) statusHTML = `<span class="text-green-400">ผ่านแน่นอน</span>`;
+            else if (currentUser.score >= 20) statusHTML = `<span class="text-yellow-400">ลุ้นมีโอกาสเรียก</span>`;
+            else statusHTML = `<span class="text-red-400">ไม่ผ่าน</span>`;
+            
+            document.getElementById('my-status-text').innerHTML = statusHTML;
+            card.classList.remove('hidden');
+        }
+        
+        function showToast(msg, color = 'green') {
+            const bg = color === 'green' ? 'bg-emerald-600' : 'bg-red-600';
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 ${bg} text-white font-bold rounded-3xl shadow-2xl flex items-center gap-x-3 z-[200]`;
+            toast.innerHTML = `<span>${msg}</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.style.transition = 'all .3s'; toast.style.opacity = '0'; setTimeout(() => toast.remove(), 250); }, 2400);
+        }
+        
+        function showWarning(msg) {
+            const toast = document.createElement('div');
+            toast.className = `fixed bottom-6 left-1/2 -translate-x-1/2 px-8 py-3 bg-red-600 text-white font-bold rounded-3xl shadow-2xl flex items-center gap-x-3 z-[200]`;
+            toast.innerHTML = `<i class="fas fa-exclamation-triangle mr-2"></i> <span>${msg}</span>`;
+            document.body.appendChild(toast);
+            setTimeout(() => { toast.style.transition = 'all .3s'; toast.style.opacity = '0'; setTimeout(() => toast.remove(), 250); }, 2600);
+        }
+        
+        function startExam() {
+            if (!currentUser) return;
+            if (currentUser.examTaken) {
+                showWarning('คุณได้ทำข้อสอบไปแล้ว ไม่สามารถทำใหม่ได้');
+                return;
+            }
+            if (!confirm('คุณแน่ใจหรือไม่ที่จะเริ่มทำข้อสอบ 20 ข้อ?\n• เวลา 20 นาที\n• ทำได้เพียงครั้งเดียว\n• ห้ามย้อนกลับ')) return;
+            
+            currentQuestion = 0;
+            userAnswers = new Array(questions.length).fill(null);
+            timeLeft = 1200;
+            
+            document.getElementById('main-content').classList.add('hidden');
+            document.getElementById('exam-area').classList.remove('hidden');
+            
+            startTimer();
+            showQuestion();
+        }
+        
+        function startTimer() {
+            if (examTimerInterval) clearInterval(examTimerInterval);
+            
+            const timerEl = document.getElementById('exam-timer');
+            
+            examTimerInterval = setInterval(() => {
+                timeLeft--;
+                const min = Math.floor(timeLeft / 60);
+                const sec = timeLeft % 60;
+                timerEl.textContent = `${min}:${sec.toString().padStart(2, '0')}`;
+                
+                if (timeLeft <= 180) {
+                    timerEl.classList.add('text-red-500', 'animate-pulse');
+                }
+                
+                if (timeLeft <= 0) {
+                    clearInterval(examTimerInterval);
+                    submitExam(true);
+                }
+            }, 1000);
+        }
+        
+        function showQuestion() {
+            const currentQuestions = getQuestions();
+            if (currentQuestion >= currentQuestions.length) {
+                submitExam();
+                return;
+            }
+            
+            const q = currentQuestions[currentQuestion];
+            const progressEl = document.getElementById('exam-progress');
+            const deptEl = document.getElementById('question-dept-badge');
+            const scenarioEl = document.getElementById('question-scenario');
+            const textEl = document.getElementById('question-text');
+            const inputEl = document.getElementById('answer-input');
+            const nextBtn = document.getElementById('next-btn');
+            const nextText = document.getElementById('next-btn-text');
+            
+            progressEl.textContent = `ข้อที่ ${currentQuestion + 1} / 20`;
+            deptEl.className = `inline-block px-5 py-1.5 text-sm font-black tracking-wider rounded-2xl dept-badge mb-3 ${q.color}`;
+            deptEl.textContent = q.dept;
+            scenarioEl.textContent = q.scenario;
+            textEl.textContent = q.q;
+            inputEl.value = userAnswers[currentQuestion] !== null ? userAnswers[currentQuestion] : '';
+            inputEl.focus();
+            
+            if (currentQuestion === currentQuestions.length - 1) {
+                nextText.textContent = 'ยืนยันคำตอบและส่งข้อสอบ';
+                nextBtn.onclick = () => submitAnswerAndNext(true);
+            } else {
+                nextText.textContent = 'ยืนยันคำตอบและไปข้อถัดไป';
+                nextBtn.onclick = () => submitAnswerAndNext(false);
+            }
+        }
+        
+        function submitAnswerAndNext(isLast = false) {
+            const inputEl = document.getElementById('answer-input');
+            const val = parseInt(inputEl.value);
+            
+            if (isNaN(val)) {
+                showWarning('กรุณากรอกคำตอบเป็นตัวเลข');
+                return;
+            }
+            
+            userAnswers[currentQuestion] = val;
+            
+            if (isLast) {
+                submitExam();
+            } else {
+                currentQuestion++;
+                showQuestion();
+            }
+        }
+        
+        function submitExam(timeUp = false) {
+            if (examTimerInterval) {
+                clearInterval(examTimerInterval);
+                examTimerInterval = null;
+            }
+            
+            const currentQuestions = getQuestions();
+            let correct = 0;
+            for (let i = 0; i < currentQuestions.length; i++) {
+                if (userAnswers[i] === currentQuestions[i].ans) correct++;
+            }
+            const score = correct * 2;
+            
+            const now = new Date().toISOString();
+            updateUserData(currentUser.name, {
+                examTaken: true,
+                score: score,
+                examDate: now,
+                userAnswers: userAnswers
+            });
+            
+            document.getElementById('exam-area').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+            
+            renderExamStatus();
+            renderLeaderboard();
+            renderMyRankCard();
+            
+            showResultModal(score, timeUp);
+        }
+        
+        function showResultModal(score, timeUp = false) {
+            const modal = document.getElementById('result-modal');
+            const passDiv = document.getElementById('pass-result');
+            const failDiv = document.getElementById('fail-result');
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            if (score >= 30) {
+                passDiv.classList.remove('hidden');
+                failDiv.classList.add('hidden');
+                document.getElementById('pass-score').textContent = score;
+            } else {
+                passDiv.classList.add('hidden');
+                failDiv.classList.remove('hidden');
+                document.getElementById('fail-score').textContent = score;
+            }
+            
+            if (timeUp) {
+                showToast('หมดเวลา! ระบบส่งข้อสอบอัตโนมัติ', 'green');
+            }
+        }
+        
+        function closeResultModal() {
+            const modal = document.getElementById('result-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+            renderExamStatus();
+            renderLeaderboard();
+            renderMyRankCard();
+        }
+        
+        function confirmExitExam() {
+            if (!confirm('คุณแน่ใจหรือไม่ที่จะออกจากข้อสอบ?\nคะแนนจะไม่ถูกบันทึกและคุณจะไม่สามารถทำใหม่ได้')) return;
+            
+            if (examTimerInterval) {
+                clearInterval(examTimerInterval);
+                examTimerInterval = null;
+            }
+            
+            document.getElementById('exam-area').classList.add('hidden');
+            document.getElementById('main-content').classList.remove('hidden');
+            showWarning('คุณออกจากข้อสอบโดยไม่ส่งคำตอบ');
+        }
+        
+        function renderAnnouncement() {
+            const box = document.getElementById('announcement-box');
+            const textEl = document.getElementById('announcement-text');
+            const timeEl = document.getElementById('announcement-time');
+            if (!box || !textEl) return;
+            
+            const announcements = getAnnouncements();
+            if (announcements.length === 0) {
+                box.classList.add('hidden');
+                return;
+            }
+            
+            const latest = announcements[0];
+            textEl.innerHTML = latest.text.replace(/\n/g, '<br>');
+            timeEl.textContent = `โพสต์เมื่อ ${latest.time} โดย ${latest.by || 'ผู้ดูแล'}`;
+            box.classList.remove('hidden');
+        }
+        
+        function postAnnouncement() {
+            const textarea = document.getElementById('announce-text');
+            if (!textarea) return;
+            const text = textarea.value.trim();
+            if (!text) { alert('กรุณากรอกข้อความประกาศ'); return; }
+            
+            const announcements = getAnnouncements();
+            announcements.unshift({
+                text: text,
+                time: new Date().toLocaleString('th-TH', {dateStyle: 'short', timeStyle: 'short'}),
+                by: 'DEV JUDDEN'
+            });
+            if (announcements.length > 5) announcements.length = 5;
+            
+            saveAnnouncements(announcements);
+            textarea.value = '';
+            showToast('โพสต์ประกาศสำเร็จ!', 'green');
+            renderAnnouncement();
+        }
+        
+        // ========== DEV FUNCTIONS ==========
+        function openDevModal() {
+            const modal = document.getElementById('dev-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            if (devLoggedIn) showDevPanel();
+            else { 
+                document.getElementById('dev-login-view').classList.remove('hidden'); 
+                document.getElementById('dev-panel-view').classList.add('hidden'); 
+            }
+        }
+        
+        function closeDevModal() { 
+            document.getElementById('dev-modal').classList.remove('flex'); 
+            document.getElementById('dev-modal').classList.add('hidden'); 
+        }
+        
+        function loginDev() {
+            if (document.getElementById('dev-password').value.trim() === 'Costfourtigger') { 
+                devLoggedIn = true; 
+                showDevPanel(); 
+                showToast('เข้าสู่โหมดผู้ดูแล • สามารถจัดการรหัสข้อสอบได้', 'green');
+            } else alert('รหัสผ่านไม่ถูกต้อง');
+        }
+        
+        function logoutDev() { 
+            devLoggedIn = false; 
+            document.getElementById('dev-panel-view').classList.add('hidden'); 
+            document.getElementById('dev-login-view').classList.remove('hidden'); 
+            showToast('ออกจากโหมดผู้ดูแลแล้ว', 'green');
+        }
+        
+        function showDevPanel() {
+            document.getElementById('dev-login-view').classList.add('hidden');
+            document.getElementById('dev-panel-view').classList.remove('hidden');
+            renderDevUsers();
+            renderExamCodesList();
+            renderAnnouncement();
+        }
+        
+        function renderDevUsers() {
+            const container = document.getElementById('users-list');
+            const countEl = document.getElementById('user-count');
+            const users = getUsers();
+            countEl.textContent = `${users.length} คน`;
+            container.innerHTML = '';
+            
+            if (users.length === 0) { 
+                container.innerHTML = `<div class="text-xs text-zinc-400 px-3">ยังไม่มีผู้ใช้</div>`; 
+                return; 
+            }
+            
+            users.forEach((u, idx) => {
+                const div = document.createElement('div');
+                div.className = `bg-black/60 border border-green-900 rounded-2xl px-4 py-3 text-xs`;
+                
+                let examInfo = '';
+                if (u.examTaken) {
+                    let status = '';
+                    if (u.score >= 30) status = '<span class="text-green-400">ผ่าน</span>';
+                    else if (u.score >= 20) status = '<span class="text-yellow-400">ลุ้น</span>';
+                    else status = '<span class="text-red-400">ไม่ผ่าน</span>';
+                    
+                    examInfo = `<div class="mt-1 text-[10px]">คะแนน: <span class="font-black text-lg">${u.score}</span> • ${status}</div>`;
+                } else {
+                    examInfo = `<div class="mt-1 text-[10px] text-zinc-500">ยังไม่ได้ทำข้อสอบ</div>`;
+                }
+                
+                let codeHTML = u.examCode ? `<span class="exam-code-badge px-2 py-0.5 rounded text-xs font-mono">${u.examCode}</span>` : `<span class="text-zinc-500">ไม่มีรหัส</span>`;
+                
+                div.innerHTML = `
+                    <div class="flex items-start justify-between gap-x-3">
+                        <div class="flex-1 min-w-0">
+                            <div class="font-bold text-emerald-300">${u.name}</div>
+                            <div class="text-[10px] font-mono text-yellow-400">${u.examId}</div>
+                            <div class="mt-0.5">${codeHTML}</div>
+                            ${examInfo}
+                        </div>
+                        <div class="flex flex-col gap-y-1 items-end">
+                            ${u.examTaken ? `
+                                <button onclick="showUserExamDetail(${idx})" class="px-3 py-0.5 text-[10px] bg-blue-700 hover:bg-blue-600 rounded-xl">ดูรายละเอียด</button>
+                                <button onclick="editUserScore(${idx})" class="px-3 py-0.5 text-[10px] bg-green-700 hover:bg-green-600 rounded-xl">แก้ไขคะแนน</button>
+                                <button onclick="resetUserExam(${idx})" class="px-3 py-0.5 text-[10px] bg-yellow-700 hover:bg-yellow-600 rounded-xl">รีเซ็ตสอบ</button>
+                            ` : `
+                                <button onclick="assignExamCodeToUser(${idx})" class="px-3 py-0.5 text-[10px] bg-yellow-700 hover:bg-yellow-600 rounded-xl">กำหนดรหัสข้อสอบ</button>
+                            `}
+                            <button onclick="deleteUser(${idx})" class="px-2 py-0.5 text-red-400 hover:text-red-300"><i class="fas fa-trash fa-sm"></i></button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        // NEW: Assign exam code to user (from Dev)
+        function assignExamCodeToUser(userIdx) {
+            const users = getUsers();
+            const user = users[userIdx];
+            if (!user) return;
+            
+            const codes = getExamCodes();
+            const availableCodes = codes.filter(code => !users.find(u => u.examCode === code));
+            
+            if (availableCodes.length === 0) {
+                alert('ไม่มีรหัสข้อสอบว่างแล้ว กรุณาเพิ่มรหัสใหม่ก่อน');
+                return;
+            }
+            
+            const codeList = availableCodes.join(', ');
+            const chosen = prompt(`กำหนดรหัสประจำตัวข้อสอบให้ ${user.name}\nรหัสที่ว่าง: ${codeList}\nกรอกรหัสที่ต้องการ:`, availableCodes[0]);
+            if (!chosen) return;
+            
+            if (!availableCodes.includes(chosen.toUpperCase())) {
+                alert('รหัสนี้ไม่ว่างหรือไม่ถูกต้อง');
+                return;
+            }
+            
+            users[userIdx].examCode = chosen.toUpperCase();
+            saveUsers(users);
+            renderDevUsers();
+            if (currentUser && currentUser.name === user.name) {
+                currentUser = users[userIdx];
+                updateUIAfterLogin();
+            }
+            showToast(`กำหนดรหัส ${chosen.toUpperCase()} ให้ ${user.name} สำเร็จ`, 'green');
+        }
+        
+        function editUserScore(idx) {
+            const users = getUsers();
+            if (!users[idx]) return;
+            const newScore = prompt(`แก้ไขคะแนนของ ${users[idx].name}\nคะแนนปัจจุบัน: ${users[idx].score}\nกรอกคะแนนใหม่ (0-40):`, users[idx].score);
+            if (newScore === null) return;
+            const scoreNum = parseInt(newScore);
+            if (isNaN(scoreNum) || scoreNum < 0 || scoreNum > 40) {
+                alert('คะแนนต้องเป็นตัวเลข 0-40');
+                return;
+            }
+            users[idx].score = scoreNum;
+            users[idx].examTaken = true;
+            if (!users[idx].examDate) users[idx].examDate = new Date().toISOString();
+            saveUsers(users);
+            renderDevUsers();
+            if (currentUser && currentUser.name === users[idx].name) {
+                currentUser = users[idx];
+                renderExamStatus();
+                renderLeaderboard();
+                renderMyRankCard();
+            }
+            showToast(`อัปเดตคะแนน ${users[idx].name} เป็น ${scoreNum} สำเร็จ`, 'green');
+        }
+        
+        function resetUserExam(idx) {
+            if (!confirm('รีเซ็ตการสอบของผู้ใช้นี้? (อนุญาตให้ทำใหม่)')) return;
+            const users = getUsers();
+            if (!users[idx]) return;
+            users[idx].examTaken = false;
+            users[idx].score = 0;
+            users[idx].examDate = null;
+            users[idx].userAnswers = null;
+            saveUsers(users);
+            renderDevUsers();
+            if (currentUser && currentUser.name === users[idx].name) {
+                currentUser = users[idx];
+                renderExamStatus();
+                renderLeaderboard();
+                renderMyRankCard();
+            }
+            showToast(`รีเซ็ตการสอบ ${users[idx].name} สำเร็จ`, 'green');
+        }
+        
+        function deleteUser(idx) {
+            if (!confirm('ลบผู้ใช้นี้ถาวร?')) return;
+            const users = getUsers();
+            const name = users[idx].name;
+            users.splice(idx, 1);
+            saveUsers(users);
+            renderDevUsers();
+            if (currentUser && currentUser.name === name) logoutUser();
+        }
+        
+        // NEW: Render Exam Codes list in Dev panel
+        function renderExamCodesList() {
+            const container = document.getElementById('exam-codes-list');
+            const codes = getExamCodes();
+            const users = getUsers();
+            
+            container.innerHTML = '';
+            
+            if (codes.length === 0) {
+                container.innerHTML = '<div class="text-zinc-400 px-2 py-1">ยังไม่มีรหัส</div>';
+                return;
+            }
+            
+            codes.forEach(code => {
+                const usedBy = users.find(u => u.examCode === code);
+                const div = document.createElement('div');
+                div.className = `flex items-center justify-between px-3 py-1.5 mb-1 rounded-xl ${usedBy ? 'bg-yellow-950/40' : 'bg-black/40'}`;
+                
+                let status = usedBy 
+                    ? `<span class="text-yellow-400 text-xs">ใช้โดย: ${usedBy.name}</span>` 
+                    : `<span class="text-green-400 text-xs">ว่าง</span>`;
+                
+                div.innerHTML = `
+                    <div class="flex items-center gap-x-3">
+                        <span class="exam-code-badge px-3 py-0.5 rounded text-sm font-mono">${code}</span>
+                        ${status}
+                    </div>
+                    <div>
+                        ${!usedBy ? `<button onclick="deleteExamCode('${code}')" class="text-red-400 hover:text-red-300 text-xs px-2"><i class="fas fa-times"></i></button>` : ''}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+        
+        function addNewExamCode() {
+            const input = document.getElementById('new-exam-code');
+            const val = input.value.trim().toUpperCase();
+            if (!val) return;
+            
+            let codes = getExamCodes();
+            if (codes.includes(val)) {
+                alert('รหัสนี้มีอยู่แล้ว');
+                return;
+            }
+            codes.push(val);
+            saveExamCodes(codes);
+            input.value = '';
+            renderExamCodesList();
+            showToast('เพิ่มรหัสประจำตัวข้อสอบสำเร็จ', 'green');
+        }
+        
+        function deleteExamCode(code) {
+            if (!confirm(`ลบรหัส ${code} ?`)) return;
+            let codes = getExamCodes();
+            codes = codes.filter(c => c !== code);
+            saveExamCodes(codes);
+            renderExamCodesList();
+            showToast('ลบรหัสสำเร็จ', 'green');
+        }
+        
+        function showUserExamDetail(idx) {
+            const users = getUsers();
+            const user = users[idx];
+            if (!user || !user.examTaken || !user.userAnswers) {
+                alert('ผู้ใช้นี้ยังไม่ได้ทำข้อสอบหรือไม่มีข้อมูลรายละเอียด');
+                return;
+            }
+            
+            const currentQuestions = getQuestions();
+            const modal = document.getElementById('detail-modal');
+            const nameEl = document.getElementById('detail-user-name');
+            const codeEl = document.getElementById('detail-exam-code');
+            const scoreEl = document.getElementById('detail-total-score');
+            const statusEl = document.getElementById('detail-status-badge');
+            const tbody = document.getElementById('detail-table-body');
+            
+            nameEl.textContent = user.name;
+            codeEl.textContent = user.examCode ? `รหัสประจำตัวข้อสอบ: ${user.examCode}` : 'ไม่มีรหัสประจำตัวข้อสอบ';
+            scoreEl.textContent = user.score;
+            
+            let statusHTML = '';
+            if (user.score >= 30) statusHTML = `<span class="status-pass px-3 py-0.5 rounded-full text-xs">ผ่านแน่นอน</span>`;
+            else if (user.score >= 20) statusHTML = `<span class="status-lucky px-3 py-0.5 rounded-full text-xs">ลุ้นมีโอกาสเรียก</span>`;
+            else statusHTML = `<span class="status-fail px-3 py-0.5 rounded-full text-xs">ไม่ผ่าน</span>`;
+            statusEl.innerHTML = statusHTML;
+            
+            tbody.innerHTML = '';
+            
+            currentQuestions.forEach((q, i) => {
+                const userAns = user.userAnswers[i];
+                const isCorrect = userAns === q.ans;
+                
+                const tr = document.createElement('tr');
+                tr.className = isCorrect ? 'bg-green-950/30' : 'bg-red-950/20';
+                
+                tr.innerHTML = `
+                    <td class="px-3 py-2 font-mono">${i+1}</td>
+                    <td class="px-3 py-2"><span class="px-2 py-0.5 text-[10px] rounded ${q.color}">${q.dept}</span></td>
+                    <td class="px-3 py-2 text-xs">${q.q.length > 65 ? q.q.substring(0,65) + '...' : q.q}</td>
+                    <td class="px-3 py-2 text-center font-bold ${isCorrect ? 'text-green-400' : 'text-red-400'}">${userAns !== null ? userAns : '-'}</td>
+                    <td class="px-3 py-2 text-center font-bold text-green-400">${q.ans}</td>
+                    <td class="px-3 py-2 text-center">${isCorrect ? '<span class="text-green-400">✅</span>' : '<span class="text-red-400">❌</span>'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+        
+        function closeDetailModal() {
+            const modal = document.getElementById('detail-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+        
+        function showQuestionManager() {
+            const modal = document.getElementById('question-manager-modal');
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            renderQuestionManager();
+        }
+        
+        function closeQuestionManager() {
+            const modal = document.getElementById('question-manager-modal');
+            modal.classList.remove('flex');
+            modal.classList.add('hidden');
+        }
+        
+        function renderQuestionManager() {
+            const tbody = document.getElementById('question-manager-body');
+            const currentQuestions = getQuestions();
+            tbody.innerHTML = '';
+            
+            currentQuestions.forEach((q, i) => {
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-yellow-950/30';
+                
+                tr.innerHTML = `
+                    <td class="px-2 py-2 font-mono text-xs">${i+1}</td>
+                    <td class="px-2 py-2"><span class="px-2 py-0.5 text-[10px] rounded ${q.color}">${q.dept}</span></td>
+                    <td class="px-2 py-2 text-xs">${q.scenario}</td>
+                    <td class="px-2 py-2 text-xs">${q.q.length > 55 ? q.q.substring(0,55) + '...' : q.q}</td>
+                    <td class="px-2 py-2 text-center font-bold">${q.ans}</td>
+                    <td class="px-2 py-2">
+                        <div class="flex gap-x-1">
+                            <button onclick="editQuestion(${i})" class="px-2 py-0.5 text-[10px] bg-yellow-700 hover:bg-yellow-600 rounded">แก้ไข</button>
+                            <button onclick="deleteQuestion(${i})" class="px-2 py-0.5 text-[10px] bg-red-700 hover:bg-red-600 rounded">ลบ</button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+        
+        function editQuestion(idx) {
+            const currentQuestions = getQuestions();
+            const q = currentQuestions[idx];
+            
+            const newDept = prompt('ชื่อกรม / หน่วย:', q.dept);
+            if (newDept === null) return;
+            const newScenario = prompt('สถานการณ์:', q.scenario);
+            if (newScenario === null) return;
+            const newQ = prompt('คำถาม:', q.q);
+            if (newQ === null) return;
+            const newAns = prompt('คำตอบที่ถูกต้อง (ตัวเลข):', q.ans);
+            if (newAns === null) return;
+            
+            currentQuestions[idx] = {
+                dept: newDept,
+                color: q.color,
+                scenario: newScenario,
+                q: newQ,
+                ans: parseInt(newAns)
+            };
+            
+            saveQuestions(currentQuestions);
+            renderQuestionManager();
+            showToast('แก้ไขข้อสอบสำเร็จ', 'green');
+        }
+        
+        function deleteQuestion(idx) {
+            if (!confirm('ลบข้อสอบข้อนี้?')) return;
+            const currentQuestions = getQuestions();
+            currentQuestions.splice(idx, 1);
+            saveQuestions(currentQuestions);
+            renderQuestionManager();
+            showToast('ลบข้อสอบสำเร็จ', 'green');
+        }
+        
+        function addNewQuestion() {
+            const dept = prompt('ชื่อกรม / หน่วย:');
+            if (!dept) return;
+            const scenario = prompt('สถานการณ์สั้นๆ:');
+            if (!scenario) return;
+            const qText = prompt('คำถาม:');
+            if (!qText) return;
+            const ans = prompt('คำตอบที่ถูกต้อง (ตัวเลข):');
+            if (!ans) return;
+            
+            const currentQuestions = getQuestions();
+            currentQuestions.push({
+                dept: dept,
+                color: "bg-emerald-600 text-white border-emerald-500",
+                scenario: scenario,
+                q: qText,
+                ans: parseInt(ans)
+            });
+            
+            saveQuestions(currentQuestions);
+            renderQuestionManager();
+            showToast('เพิ่มข้อสอบใหม่สำเร็จ', 'green');
+        }
+        
+        function clearAllData() { 
+            if (!confirm('ล้างข้อมูลทั้งหมด?')) return; 
+            localStorage.clear(); 
+            location.reload(); 
+        }
+        
+        function exportAllData() {
+            const data = { 
+                users: getUsers(), 
+                questions: getQuestions(),
+                examCodes: getExamCodes(),
+                announcements: getAnnouncements(), 
+                exported: new Date().toISOString() 
+            };
+            const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); 
+            a.href = url; 
+            a.download = `rta_exam_final_backup_${new Date().toISOString().slice(0,10)}.json`; 
+            a.click(); 
+            URL.revokeObjectURL(url);
+        }
+        
+        function initializeApp() {
+            initTailwind();
+            initSnow();
+            
+            questions = getQuestions();
+            
+            const savedName = getCurrentUser();
+            if (savedName) {
+                const user = getUserData(savedName);
+                if (user) { 
+                    currentUser = user; 
+                    document.getElementById('auth-gate').classList.add('hidden'); 
+                    updateUIAfterLogin(); 
+                } else clearCurrentUser();
+            }
+            updateUserStatusBar();
+            showAuthTab('register');
+            
+            document.addEventListener('keydown', function(e) {
+                if (document.getElementById('exam-area').classList.contains('hidden')) return;
+                if (e.key === 'Enter') {
+                    const nextBtn = document.getElementById('next-btn');
+                    if (nextBtn) nextBtn.click();
+                }
+            });
+            
+            console.log('%c[RTA Math Exam Final] 20 ข้อ + รหัส AA01-AA08 + Dev เพิ่มรหัสได้ + ดูรายละเอียดครบถ้วน', 'color:#4ade80');
+        }
+        
+        window.onload = initializeApp;
+    </script>
+</body>
+</html>
